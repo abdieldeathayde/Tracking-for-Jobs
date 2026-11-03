@@ -19,7 +19,7 @@ class JobCollector:
             parsed_url.scheme not in ("http", "https")
             or not parsed_url.netloc
         ):
-            raise.ValueError(
+            raise ValueError(
                 "Informe uma URL válida."
             )
 
@@ -34,7 +34,7 @@ class JobCollector:
             "requirements": "",
             "compability": "",
             "url": url.strip(),
-            "found_date": datetime.now().date().isoformat()
+            "found_date": datetime.now().date().isoformat(),
             "application_status": "Não iniciada",
             "curriculum": "",
 
@@ -42,3 +42,4 @@ class JobCollector:
                 "Dados inseridos pelo usuário. "
                 "Confirmar na página oficiel."
             )
+        }

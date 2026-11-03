@@ -2,7 +2,7 @@ from pathlib import Path
 
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
-from config import WAIT_SECONDS
+from jobapply.config import WAIT_SECONDS
 
 class ApplicationAssistant:
 

@@ -22,7 +22,7 @@ CV_DEV_PATH = ROOT_DIR / os.getenv(
     "data/curriculo/Abdiel_CV_desenvolvimento.pdf"
 )
 
-BROWSER = os.getenv("BROWSER", "chrome").lower()
+BROWSER = os.getenv("BROWSER", "edge").lower()
 
 HEADLESS = (
     os.getenv("HEADLESS", "false").lower() == "true"

@@ -126,7 +126,7 @@ JobApply-Automation/
 ## Requisitos
 
 - Python 3.10 ou superior.
-- Google Chrome instalado.
+- Microsoft Edge, Google Chrome ou Firefox instalado, conforme a opção `BROWSER`.
 - Visual Studio Code (recomendado).
 - Ambiente virtual Python.
 - Conexão com a internet.
@@ -174,11 +174,12 @@ Crie um arquivo `.env` na raiz do projeto:
 CV_INFRA_PATH=data/curriculo/Abdiel_CV_Infraestrutura.pdf
 CV_DEV_PATH=data/curriculo/Abdiel_CV_Desenvolvimento.docx
 
-BROWSER=chrome
+BROWSER=edge
 HEADLESS=false
 WAIT_TIMEOUT=15
 ```
 
+Use `BROWSER=edge`, `BROWSER=chrome` ou `BROWSER=firefox` para escolher o navegador.
 Certifique-se de que os arquivos dos currículos estejam nos caminhos configurados.
 
 ## Como utilizar
@@ -194,10 +195,18 @@ Inicializa a estrutura da planilha de acompanhamento.
 ### Consultar oportunidades
 
 ```bash
-python main.py search
+python main.py search --area ambas
 ```
 
-Abre as páginas das plataformas configuradas para pesquisa de oportunidades.
+Abre as pesquisas para Blumenau e Gaspar, incluindo vagas remotas, híbridas
+e presenciais. Para escolher áreas, cidades ou modalidades:
+
+```bash
+python main.py search --area infra --local "Blumenau SC" "Gaspar SC" --modalidade Remoto Híbrido Presencial
+```
+
+As modalidades são incluídas como termos alternativos de pesquisa. No Gupy,
+o navegador abre o portal para que os filtros sejam aplicados manualmente.
 
 ### Cadastrar uma vaga
 

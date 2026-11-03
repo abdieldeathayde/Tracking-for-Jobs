@@ -1,9 +1,16 @@
 import argparse
+import sys
+from pathlib import Path
 
 from urllib.parse import quote_plus
 
-from config import EXCEL_PATH, PLATFORMS
+if __package__ in (None, ""):
+    sys.path.insert(
+        0,
+        str(Path(__file__).resolve().parent.parent)
+    )
 
+from jobapply.config import EXCEL_PATH, PLATFORMS
 from jobapply.browser.selenium_manager import BrowserManager
 
 from jobapply.collectors.job_collector import JobCollector
@@ -55,7 +62,17 @@ def main():
 
     search_parser.add_argument(
         "--local",
-        default="Blumenau SC"
+        nargs="+",
+        default=["Blumenau SC", "Gaspar SC"],
+        metavar="CIDADE"
+    )
+
+    search_parser.add_argument(
+        "--modalidade",
+        choices=["Remoto", "Híbrido", "Presencial"],
+        nargs="+",
+        default=["Remoto", "Híbrido", "Presencial"],
+        metavar="TIPO"
     )
 
     # Cadastro de vaga
@@ -191,31 +208,55 @@ def main():
 
         with BrowserManager() as browser:
 
+            modality_terms = " OR ".join(
+                f'"{modality}"'
+                for modality in args.modalidade
+            )
+
             for platform, template in PLATFORMS.items():
 
                 for query in selected_queries:
 
-                    if platform == "gupy":
+                    search_query = (
+                        f"{query} ({modality_terms})"
+                    )
 
-                        url = template
+                    for location in args.local:
 
-                    else:
+                        if platform == "gupy":
 
-                        url = template.format(
-                            query=quote_plus(query),
-                            location=quote_plus(args.local)
+                            url = template
+
+                        else:
+
+                            url = template.format(
+                                query=quote_plus(search_query),
+                                location=quote_plus(location)
+                            )
+
+                        try:
+                            browser.driver.get(url)
+                        except Exception as error:
+                            if type(error).__name__ != "InvalidSessionIdException":
+                                raise
+                            logger.warning(
+                                "Sessão do navegador encerrada durante a pesquisa."
+                            )
+                            print(
+                                "O navegador foi fechado ou desconectado. "
+                                "A pesquisa foi interrompida."
+                            )
+                            return
+
+                        print(
+                            f"Pesquisa: {platform} - {query} - "
+                            f"{location} - {', '.join(args.modalidade)}"
                         )
 
-                    browser.driver.get(url)
-
-                    print(
-                        f"Pesquisa: {platform} - {query}"
-                    )
-
-                    input(
-                        "Analise a página. "
-                        "Pressione ENTER para continuar..."
-                    )
+                        input(
+                            "Analise a página. "
+                            "Pressione ENTER para continuar..."
+                        )
 
     # Cadastro de oportunidade
 
