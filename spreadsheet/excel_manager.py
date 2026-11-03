@@ -1,4 +1,6 @@
 from pathlib import Path
+import re
+from urllib.parse import urlparse
 
 from openpyxl import Workbook, load_workbook
 
@@ -268,6 +270,12 @@ class ExcelManager:
         workbook.save(self.path)
 
     def add_job(self, record):
+        return self.add_jobs([record])
+
+    def add_jobs(self, records):
+        records = list(records)
+        if not records:
+            return 0
 
         self.ensure_workbook()
 
@@ -276,70 +284,103 @@ class ExcelManager:
         )
 
         ws = workbook["Vagas"]
-
-        row_id = max(1, ws.max_row)
-
-        values = [
-
-            row_id,
-
-            record.get("company", ""),
-
-            record.get("title", ""),
-
-            record.get(
-                "modality",
-                "Não informado"
-            ),
-
-            record.get(
-                "location",
-                "Não informado"
-            ),
-
-            record.get(
-                "salary",
-                "Não informado"
-            ),
-
-            record.get("requirements", ""),
-
-            record.get("compatibility", ""),
-
-            record.get("url", ""),
-
-            record.get("platform", "Outra"),
-
-            record.get("found_date", ""),
-
-            record.get("application_date", ""),
-
-            record.get(
-                "application_status",
-                "Não iniciada"
-            ),
-
-            record.get(
-                "job_status",
-                "Aberta / não verificada"
-            ),
-
-            record.get("curriculum", ""),
-
-            record.get("notes", "")
-        ]
-
-        ws.append(values)
-
-        for cell in ws[ws.max_row]:
-
-            cell.alignment = Alignment(
-                vertical="top",
-                wrap_text=True
+        existing_urls = {
+            self._url_key(row[8])
+            for row in ws.iter_rows(
+                min_row=2,
+                values_only=True
             )
+            if row[8]
+        }
+        added = 0
+
+        for record in records:
+            url = record.get("url", "")
+            url_key = self._url_key(url)
+            if url_key in existing_urls:
+                continue
+
+            values = [
+
+                ws.max_row,
+
+                record.get("company", ""),
+
+                record.get("title", ""),
+
+                record.get(
+                    "modality",
+                    "Não informado"
+                ),
+
+                record.get(
+                    "location",
+                    "Não informado"
+                ),
+
+                record.get(
+                    "salary",
+                    "Não informado"
+                ),
+
+                record.get("requirements", ""),
+
+                record.get("compatibility", ""),
+
+                url,
+
+                record.get("platform", "Outra"),
+
+                record.get("found_date", ""),
+
+                record.get("application_date", ""),
+
+                record.get(
+                    "application_status",
+                    "Não iniciada"
+                ),
+
+                record.get(
+                    "job_status",
+                    "Aberta / não verificada"
+                ),
+
+                record.get("curriculum", ""),
+
+                record.get("notes", "")
+            ]
+
+            ws.append(values)
+            existing_urls.add(url_key)
+            added += 1
+
+            for cell in ws[ws.max_row]:
+
+                cell.alignment = Alignment(
+                    vertical="top",
+                    wrap_text=True
+                )
 
         ws.tables["TabelaVagas"].ref = (
             f"A1:P{ws.max_row}"
         )
 
         workbook.save(self.path)
+        return added
+
+    @staticmethod
+    def _url_key(url):
+        parsed_url = urlparse(url)
+        hostname = parsed_url.netloc.casefold()
+        path = parsed_url.path.rstrip("/").casefold()
+
+        if hostname.endswith("linkedin.com"):
+            hostname = "linkedin.com"
+            job_id = re.search(r"/jobs/view/(?:.*-)?(\d+)$", path)
+            if job_id:
+                path = f"/jobs/view/{job_id.group(1)}"
+
+        return (
+            hostname,
+            path
+        )

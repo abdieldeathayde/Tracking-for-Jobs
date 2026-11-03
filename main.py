@@ -4,6 +4,12 @@ from pathlib import Path
 
 from urllib.parse import quote_plus
 
+from selenium.common.exceptions import (
+    InvalidSessionIdException,
+    TimeoutException
+)
+from selenium.webdriver.support.ui import WebDriverWait
+
 if __package__ in (None, ""):
     sys.path.insert(
         0,
@@ -14,6 +20,7 @@ from jobapply.config import EXCEL_PATH, PLATFORMS
 from jobapply.browser.selenium_manager import BrowserManager
 
 from jobapply.collectors.job_collector import JobCollector
+from jobapply.collectors.linkedin_collector import LinkedInCollector
 
 from jobapply.spreadsheet.excel_manager import ExcelManager
 
@@ -27,6 +34,19 @@ from jobapply.utils.logger import get_logger
 
 
 logger = get_logger()
+
+JOB_QUERIES = {
+    "infra": [
+        "Analista de TI Júnior",
+        "Analista de Suporte Junior"
+    ],
+    "dev": [
+        "Java Developer",
+        "Fullstack developer",
+        "Frontend Developer",
+        "Mobile Developer"
+    ]
+}
 
 
 def main():
@@ -73,6 +93,12 @@ def main():
         nargs="+",
         default=["Remoto", "Híbrido", "Presencial"],
         metavar="TIPO"
+    )
+
+    search_parser.add_argument(
+        "--plataforma",
+        choices=PLATFORMS.keys(),
+        default="linkedin"
     )
 
     # Cadastro de vaga
@@ -145,7 +171,6 @@ def main():
     open_parser.add_argument(
         "--area",
         choices=["infra", "dev"],
-        required=True
     )
 
     open_parser.add_argument(
@@ -178,67 +203,50 @@ def main():
 
     elif args.command == "search":
 
-        queries = {
-
-            "infra": [
-                "Suporte Técnico TI",
-                "Infraestrutura de TI",
-                "Service Desk"
-            ],
-
-            "dev": [
-                "Desenvolvedor Java",
-                "Java Spring Boot",
-                "Desenvolvedor Angular"
-            ]
-        }
-
         if args.area == "ambas":
 
             selected_queries = (
-                queries["infra"] +
-                queries["dev"]
+                JOB_QUERIES["dev"] +
+                JOB_QUERIES["infra"]
             )
 
         else:
 
-            selected_queries = queries[
+            selected_queries = JOB_QUERIES[
                 args.area
             ]
 
-        with BrowserManager() as browser:
+        collected_jobs = []
 
-            modality_terms = " OR ".join(
-                f'"{modality}"'
-                for modality in args.modalidade
-            )
+        with BrowserManager() as browser:
 
             for platform, template in PLATFORMS.items():
 
+                if platform != args.plataforma:
+                    continue
                 for query in selected_queries:
-
-                    search_query = (
-                        f"{query} ({modality_terms})"
-                    )
 
                     for location in args.local:
 
-                        if platform == "gupy":
-
-                            url = template
-
+                        if platform == "linkedin":
+                            url = LinkedInCollector.search_url(
+                                query,
+                                location,
+                                args.modalidade
+                            )
                         else:
-
-                            url = template.format(
-                                query=quote_plus(search_query),
-                                location=quote_plus(location)
+                            url = (
+                                template
+                                if platform == "gupy"
+                                else template.format(
+                                    query=quote_plus(query),
+                                    location=quote_plus(location)
+                                )
                             )
 
                         try:
                             browser.driver.get(url)
-                        except Exception as error:
-                            if type(error).__name__ != "InvalidSessionIdException":
-                                raise
+                        except InvalidSessionIdException:
                             logger.warning(
                                 "Sessão do navegador encerrada durante a pesquisa."
                             )
@@ -248,15 +256,76 @@ def main():
                             )
                             return
 
+                        if platform == "linkedin":
+                            try:
+                                WebDriverWait(
+                                    browser.driver,
+                                    10
+                                ).until(
+                                    lambda driver:
+                                    driver.find_elements(
+                                        "css selector",
+                                        LinkedInCollector.CARD_SELECTOR
+                                    )
+                                )
+                                search_results = (
+                                    LinkedInCollector.collect(
+                                        browser.driver,
+                                        query,
+                                        location
+                                    )
+                                )
+                            except InvalidSessionIdException:
+                                logger.warning(
+                                    "Sessão do navegador encerrada "
+                                    "durante a coleta do LinkedIn."
+                                )
+                                print(
+                                    "O navegador foi fechado ou "
+                                    "desconectado. A busca foi interrompida."
+                                )
+                                return
+                            except TimeoutException:
+                                logger.warning(
+                                    "Nenhum anúncio carregado no LinkedIn "
+                                    "para %s em %s.",
+                                    query,
+                                    location
+                                )
+                                print(
+                                    f"Nenhum anúncio carregado: "
+                                    f"{query} - {location}. "
+                                    "O LinkedIn pode exigir login ou limitar "
+                                    "a busca."
+                                )
+                                continue
+
+                            collected_jobs.extend(search_results)
+                            print(
+                                f"Busca LinkedIn: {query} - {location}; "
+                                f"{len(search_results)} anúncio(s) lido(s)."
+                            )
+                            continue
+
                         print(
-                            f"Pesquisa: {platform} - {query} - "
-                            f"{location} - {', '.join(args.modalidade)}"
+                            f"Pesquisa: {platform} - {query} - {location}"
                         )
 
                         input(
                             "Analise a página. "
                             "Pressione ENTER para continuar..."
                         )
+
+        if args.plataforma == "linkedin":
+            unique_jobs = LinkedInCollector.unique_records(
+                collected_jobs
+            )
+            saved_count = excel.add_jobs(unique_jobs)
+            print(
+                f"Busca concluída: {len(unique_jobs)} vaga(s) única(s) "
+                f"encontrada(s), {saved_count} nova(s) registrada(s) "
+                "na planilha."
+            )
 
     # Cadastro de oportunidade
 

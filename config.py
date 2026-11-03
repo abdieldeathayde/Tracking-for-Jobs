@@ -14,7 +14,7 @@ EXCEL_PATH = DATA_DIR / "vagas.xlsx"
 
 CV_INFRA_PATH = ROOT_DIR / os.getenv(
     "CV_INFRA_PATH",
-    "data/curriculo/Abdiel_CV_Infraestrutura.pdf"
+    "data/curriculo/Abdiel_CV_Infraestrutura .pdf"
 )
 
 CV_DEV_PATH = ROOT_DIR / os.getenv(

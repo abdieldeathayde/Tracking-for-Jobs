@@ -171,8 +171,8 @@ python -m pip install -r requirements.txt
 Crie um arquivo `.env` na raiz do projeto:
 
 ```env
-CV_INFRA_PATH=data/curriculo/Abdiel_CV_Infraestrutura.pdf
-CV_DEV_PATH=data/curriculo/Abdiel_CV_Desenvolvimento.docx
+CV_INFRA_PATH=data/curriculo/Abdiel_CV_Infraestrutura .pdf
+CV_DEV_PATH=data/curriculo/Abdiel_CV_Desenvolvimento.pdf
 
 BROWSER=edge
 HEADLESS=false
@@ -195,18 +195,23 @@ Inicializa a estrutura da planilha de acompanhamento.
 ### Consultar oportunidades
 
 ```bash
-python main.py search --area ambas
+python main.py search --area ambas --plataforma linkedin
 ```
 
-Abre as pesquisas para Blumenau e Gaspar, incluindo vagas remotas, híbridas
-e presenciais. Para escolher áreas, cidades ou modalidades:
+O LinkedIn é a plataforma padrão. A busca percorre automaticamente as
+consultas `Java Developer`, `Fullstack developer`, `Frontend Developer`,
+`Mobile Developer`, `Analista de TI Júnior` e `Analista de Suporte Junior`,
+nas cidades Blumenau e Gaspar, com os filtros de modalidade selecionados.
+Os anúncios encontrados são registrados na planilha, sem duplicar links.
+Para escolher áreas, cidades ou modalidades:
 
 ```bash
 python main.py search --area infra --local "Blumenau SC" "Gaspar SC" --modalidade Remoto Híbrido Presencial
 ```
 
-As modalidades são incluídas como termos alternativos de pesquisa. No Gupy,
-o navegador abre o portal para que os filtros sejam aplicados manualmente.
+A busca coleta os anúncios exibidos publicamente pelo LinkedIn. O site pode
+limitar resultados ou solicitar login; nesses casos, a busca informa que não
+conseguiu carregar anúncios. A coleta não envia candidaturas.
 
 ### Cadastrar uma vaga
 
@@ -227,10 +232,14 @@ O sistema solicita os dados da oportunidade e registra as informações na plani
 ### Abrir uma candidatura
 
 ```bash
-python main.py open
+python main.py open --url "URL_DA_VAGA" --empresa "Empresa" --cargo "Analista de Cibersegurança"
 ```
 
-O navegador é aberto para auxiliar no processo de candidatura. O usuário deve revisar as informações e realizar o envio manualmente.
+O currículo é escolhido pelo cargo: programação/desenvolvimento usa o currículo
+de desenvolvimento; infraestrutura, suporte e segurança da informação usam o
+currículo de infraestrutura. Se o cargo não for reconhecido, informe
+`--area infra` ou `--area dev`. O navegador prepara a candidatura para revisão;
+o envio ainda é manual.
 
 ## Planilha de acompanhamento
 
