@@ -192,6 +192,17 @@ python main.py init
 
 Inicializa a estrutura da planilha de acompanhamento.
 
+### Acompanhar candidaturas
+
+```bash
+python main.py list
+python main.py update --id 3 --status "Em análise"
+```
+
+`list` exibe as vagas cadastradas com seus IDs e status. `update` altera o
+status da vaga indicada; os valores aceitos são os mesmos da lista suspensa
+da planilha.
+
 ### Consultar oportunidades
 
 ```bash
@@ -262,6 +273,9 @@ Informações controladas:
 - Situação da vaga;
 - Currículo utilizado;
 - Observações.
+
+Os registros são deduplicados pelo link da vaga. Logs da aplicação ficam em
+`logs/jobapply.log`, separados da planilha em `data/vagas.xlsx`.
 
 ## Fluxo de funcionamento
 

@@ -8,7 +8,7 @@ load_dotenv(ROOT_DIR / ".env")
 
 DATA_DIR = ROOT_DIR / "data"
 CV_DIR = DATA_DIR / "curriculo"
-LOG_DIR = ROOT_DIR / "vagas.xlsx"
+LOG_DIR = ROOT_DIR / "logs"
 
 EXCEL_PATH = DATA_DIR / "vagas.xlsx"
 

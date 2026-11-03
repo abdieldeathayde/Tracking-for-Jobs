@@ -22,7 +22,10 @@ from jobapply.browser.selenium_manager import BrowserManager
 from jobapply.collectors.job_collector import JobCollector
 from jobapply.collectors.linkedin_collector import LinkedInCollector
 
-from jobapply.spreadsheet.excel_manager import ExcelManager
+from jobapply.spreadsheet.excel_manager import (
+    APPLICATION_STATUSES,
+    ExcelManager
+)
 
 from jobapply.resume.resume_manager import ResumeManager
 
@@ -65,6 +68,26 @@ def main():
     subparsers.add_parser(
         "init",
         help="Criar planilha Excel"
+    )
+
+    subparsers.add_parser(
+        "list",
+        help="Listar vagas cadastradas"
+    )
+
+    update_parser = subparsers.add_parser(
+        "update",
+        help="Atualizar o status de candidatura de uma vaga"
+    )
+    update_parser.add_argument(
+        "--id",
+        type=int,
+        required=True
+    )
+    update_parser.add_argument(
+        "--status",
+        choices=APPLICATION_STATUSES,
+        required=True
     )
 
     # Pesquisa
@@ -197,6 +220,40 @@ def main():
 
         print(
             f"Planilha criada: {EXCEL_PATH}"
+        )
+
+    elif args.command == "list":
+        jobs = excel.list_jobs()
+        if not jobs:
+            print("Nenhuma vaga cadastrada.")
+            return
+
+        print(
+            f"{'ID':>4}  {'STATUS':<16} {'CARGO':<32} "
+            f"{'EMPRESA':<24} {'LOCALIDADE':<28} LINK"
+        )
+        print("-" * 140)
+        for job in jobs:
+            print(
+                f"{job['ID']:>4}  "
+                f"{str(job['Status da candidatura'] or ''):<16} "
+                f"{str(job['Cargo'] or '')[:32]:<32} "
+                f"{str(job['Empresa'] or '')[:24]:<24} "
+                f"{str(job['Localidade'] or '')[:28]:<28} "
+                f"{job['Link da vaga'] or ''}"
+            )
+
+    elif args.command == "update":
+        if not excel.update_application_status(
+            args.id,
+            args.status
+        ):
+            parser.error(
+                f"Não existe vaga com ID {args.id}."
+            )
+        print(
+            f"Status da vaga {args.id} atualizado para "
+            f"'{args.status}'."
         )
 
     # Pesquisa de vagas

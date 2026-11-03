@@ -41,6 +41,19 @@ HEADERS = [
     "Observações"
 ]
 
+APPLICATION_STATUSES = [
+    "Não iniciada",
+    "Em progresso",
+    "Enviada",
+    "Em análise",
+    "Entrevista",
+    "Congelada",
+    "Desclassificado",
+    "Aprovado",
+    "Recusada",
+    "Encerrada"
+]
+
 
 class ExcelManager:
 
@@ -293,6 +306,16 @@ class ExcelManager:
             if row[8]
         }
         added = 0
+        existing_ids = [
+            row[0]
+            for row in ws.iter_rows(
+                min_row=2,
+                max_col=1,
+                values_only=True
+            )
+            if isinstance(row[0], int)
+        ]
+        next_id = max(existing_ids, default=0) + 1
 
         for record in records:
             url = record.get("url", "")
@@ -302,7 +325,7 @@ class ExcelManager:
 
             values = [
 
-                ws.max_row,
+                next_id,
 
                 record.get("company", ""),
 
@@ -353,6 +376,7 @@ class ExcelManager:
             ws.append(values)
             existing_urls.add(url_key)
             added += 1
+            next_id += 1
 
             for cell in ws[ws.max_row]:
 
@@ -367,6 +391,61 @@ class ExcelManager:
 
         workbook.save(self.path)
         return added
+
+    def list_jobs(self, status=None):
+        self.ensure_workbook()
+        workbook = load_workbook(
+            self.path,
+            read_only=True,
+            data_only=True
+        )
+
+        try:
+            worksheet = workbook["Vagas"]
+            rows = worksheet.iter_rows(
+                min_row=2,
+                values_only=True
+            )
+            jobs = [
+                dict(zip(HEADERS, row))
+                for row in rows
+                if any(value is not None for value in row)
+            ]
+        finally:
+            workbook.close()
+
+        if status is not None:
+            jobs = [
+                job for job in jobs
+                if job["Status da candidatura"] == status
+            ]
+
+        return jobs
+
+    def update_application_status(self, job_id, status):
+        if status not in APPLICATION_STATUSES:
+            raise ValueError(
+                f"Status inválido: {status}"
+            )
+
+        self.ensure_workbook()
+        workbook = load_workbook(self.path)
+
+        try:
+            worksheet = workbook["Vagas"]
+            for row in worksheet.iter_rows(
+                min_row=2,
+                min_col=1,
+                max_col=13
+            ):
+                if row[0].value == job_id:
+                    row[12].value = status
+                    workbook.save(self.path)
+                    return True
+        finally:
+            workbook.close()
+
+        return False
 
     @staticmethod
     def _url_key(url):
