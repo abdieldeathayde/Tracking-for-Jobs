@@ -136,7 +136,7 @@ JobApply-Automation/
 ### 1. Clone o repositório
 
 ```bash
-git clone https://github.com/SEU-USUARIO/JobApply-Automation.git
+git clone https://github.com/abdieldeathayde/Tracking-for-Jobs.git
 ```
 
 ### 2. Acesse a pasta
