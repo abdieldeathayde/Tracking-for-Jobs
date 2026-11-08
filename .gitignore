@@ -1,4 +1,5 @@
 .venv/
+env/
 __pycache__/
 .pytest_cache/
 .env
@@ -7,3 +8,6 @@ logs/
 .DS_Store
 
 data/exports/
+
+data/vagas.xlsx
+data/~$*.xlsx

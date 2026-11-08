@@ -1,7 +1,4 @@
 import argparse
-import sys
-from pathlib import Path
-
 from urllib.parse import quote_plus
 
 from selenium.common.exceptions import (
@@ -9,12 +6,6 @@ from selenium.common.exceptions import (
     TimeoutException
 )
 from selenium.webdriver.support.ui import WebDriverWait
-
-if __package__ in (None, ""):
-    sys.path.insert(
-        0,
-        str(Path(__file__).resolve().parent.parent)
-    )
 
 from jobapply.config import EXCEL_PATH, PLATFORMS
 from jobapply.browser.selenium_manager import BrowserManager
@@ -70,9 +61,19 @@ def main():
         help="Criar planilha Excel"
     )
 
-    subparsers.add_parser(
+    list_parser = subparsers.add_parser(
         "list",
         help="Listar vagas cadastradas"
+    )
+    list_parser.add_argument(
+        "--status",
+        choices=APPLICATION_STATUSES,
+        help="Mostrar apenas vagas com este status"
+    )
+
+    subparsers.add_parser(
+        "summary",
+        help="Exibir um resumo das candidaturas por status"
     )
 
     update_parser = subparsers.add_parser(
@@ -223,9 +224,15 @@ def main():
         )
 
     elif args.command == "list":
-        jobs = excel.list_jobs()
+        jobs = excel.list_jobs(status=args.status)
         if not jobs:
-            print("Nenhuma vaga cadastrada.")
+            if args.status:
+                print(
+                    "Nenhuma vaga cadastrada com o status "
+                    f"'{args.status}'."
+                )
+            else:
+                print("Nenhuma vaga cadastrada.")
             return
 
         print(
@@ -242,6 +249,12 @@ def main():
                 f"{str(job['Localidade'] or '')[:28]:<28} "
                 f"{job['Link da vaga'] or ''}"
             )
+
+    elif args.command == "summary":
+        summary = excel.get_summary()
+        print(f"Total de vagas: {summary['total']}")
+        for status, count in summary["by_status"].items():
+            print(f"{status:<20} {count:>4}")
 
     elif args.command == "update":
         if not excel.update_application_status(
@@ -408,16 +421,14 @@ def main():
                 curriculum
             )
 
-            excel.add_job(record)
-
-            logger.info(
-                "Vaga cadastrada: %s",
-                args.cargo
-            )
-
-            print(
-                "Vaga cadastrada com sucesso!"
-            )
+            if excel.add_job(record):
+                logger.info(
+                    "Vaga cadastrada: %s",
+                    args.cargo
+                )
+                print("Vaga cadastrada com sucesso!")
+            else:
+                print("Essa vaga já está cadastrada pelo mesmo link.")
 
         except Exception as error:
 
@@ -479,11 +490,10 @@ def main():
                     "Em progresso"
                 )
 
-                excel.add_job(record)
-
-                print(
-                    "Vaga registrada na planilha."
-                )
+                if excel.add_job(record):
+                    print("Vaga registrada na planilha.")
+                else:
+                    print("Essa vaga já estava registrada na planilha.")
 
         except Exception as error:
 

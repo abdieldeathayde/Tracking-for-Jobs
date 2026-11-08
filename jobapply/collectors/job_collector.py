@@ -12,8 +12,16 @@ class JobCollector:
         location = "Não informado",
         platform = "Outra"
     ):
+        company = company.strip()
+        title = title.strip()
+        url = url.strip()
         parsed_url = urlparse(url)
 
+        if not company:
+            raise ValueError("Informe o nome da empresa.")
+
+        if not title:
+            raise ValueError("Informe o cargo da vaga.")
 
         if (
             parsed_url.scheme not in ("http", "https")
@@ -25,21 +33,21 @@ class JobCollector:
 
         return {
 
-            "company": company.strip(),
-            "title": title.strip(),
+            "company": company,
+            "title": title,
             "modality": modality,
             "location": location,
             "platform": platform,
             "salary": "Não informado",
             "requirements": "",
-            "compability": "",
-            "url": url.strip(),
+            "compatibility": "",
+            "url": url,
             "found_date": datetime.now().date().isoformat(),
             "application_status": "Não iniciada",
             "curriculum": "",
 
             "notes": (
                 "Dados inseridos pelo usuário. "
-                "Confirmar na página oficiel."
+                "Confirmar na página oficial."
             )
         }

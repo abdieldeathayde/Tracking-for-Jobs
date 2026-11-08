@@ -1,3 +1,4 @@
+from datetime import date
 from pathlib import Path
 import re
 from urllib.parse import urlparse
@@ -422,6 +423,22 @@ class ExcelManager:
 
         return jobs
 
+    def get_summary(self):
+        jobs = self.list_jobs()
+        by_status = {
+            status: 0
+            for status in APPLICATION_STATUSES
+        }
+
+        for job in jobs:
+            status = job["Status da candidatura"] or "Não informado"
+            by_status[status] = by_status.get(status, 0) + 1
+
+        return {
+            "total": len(jobs),
+            "by_status": by_status
+        }
+
     def update_application_status(self, job_id, status):
         if status not in APPLICATION_STATUSES:
             raise ValueError(
@@ -440,6 +457,8 @@ class ExcelManager:
             ):
                 if row[0].value == job_id:
                     row[12].value = status
+                    if status == "Enviada" and row[11].value is None:
+                        row[11].value = date.today().isoformat()
                     workbook.save(self.path)
                     return True
         finally:

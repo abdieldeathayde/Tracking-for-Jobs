@@ -2,7 +2,7 @@ from pathlib import Path
 import os
 from dotenv import load_dotenv
 
-ROOT_DIR = Path(__file__).resolve().parent
+ROOT_DIR = Path(__file__).resolve().parent.parent
 
 load_dotenv(ROOT_DIR / ".env")
 
@@ -14,12 +14,12 @@ EXCEL_PATH = DATA_DIR / "vagas.xlsx"
 
 CV_INFRA_PATH = ROOT_DIR / os.getenv(
     "CV_INFRA_PATH",
-    "data/curriculo/Abdiel_CV_Infraestrutura .pdf"
+    "data/curriculo/Abdiel_CV_Infraestrutura.pdf"
 )
 
 CV_DEV_PATH = ROOT_DIR / os.getenv(
     "CV_DEV_PATH",
-    "data/curriculo/Abdiel_CV_desenvolvimento.pdf"
+    "data/curriculo/Abdiel_CV_Desenvolvimento.pdf"
 )
 
 BROWSER = os.getenv("BROWSER", "edge").lower()
@@ -45,3 +45,4 @@ PLATFORMS = {
         "?q={query}&l={location}"
     )
 }
+

@@ -1,4 +1,5 @@
 import pytest
+from datetime import date
 from openpyxl import load_workbook
 
 from jobapply.spreadsheet.excel_manager import ExcelManager
@@ -49,6 +50,7 @@ def test_list_jobs_and_update_application_status(tmp_path):
         }
     ])
 
+    assert manager.update_application_status(2, "Enviada")
     assert manager.update_application_status(2, "Em análise")
 
     all_jobs = manager.list_jobs()
@@ -58,7 +60,36 @@ def test_list_jobs_and_update_application_status(tmp_path):
     assert [job["Cargo"] for job in filtered_jobs] == [
         "Analista de Suporte"
     ]
+    assert filtered_jobs[0]["Data da candidatura"] == date.today().isoformat()
     assert not manager.update_application_status(99, "Enviada")
+
+
+def test_summary_counts_jobs_by_application_status(tmp_path):
+    manager = ExcelManager(tmp_path / "jobs.xlsx")
+    manager.add_jobs([
+        {
+            "title": "Job 1",
+            "url": "https://example.com/jobs/1"
+        },
+        {
+            "title": "Job 2",
+            "url": "https://example.com/jobs/2"
+        }
+    ])
+    manager.update_application_status(2, "Em análise")
+
+    summary = manager.get_summary()
+
+    assert summary["total"] == 2
+    assert summary["by_status"]["Não iniciada"] == 1
+    assert summary["by_status"]["Em análise"] == 1
+
+
+def test_summary_includes_empty_statuses_when_no_jobs_exist(tmp_path):
+    summary = ExcelManager(tmp_path / "jobs.xlsx").get_summary()
+
+    assert summary["total"] == 0
+    assert all(count == 0 for count in summary["by_status"].values())
 
 
 def test_update_application_status_rejects_unknown_status(tmp_path):
