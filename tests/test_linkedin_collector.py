@@ -75,7 +75,7 @@ def test_collect_extracts_linkedin_job_card():
         "platform": "LinkedIn",
         "salary": "Não informado",
         "requirements": "",
-        "compability": "",
+        "compatibility": "",
         "url": "https://www.linkedin.com/jobs/view/123/",
         "found_date": records[0]["found_date"],
         "application_status": "Não iniciada",

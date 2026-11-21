@@ -1,7 +1,7 @@
 # JobApply Automation
 
 <p align="center">
-  <strong>Automação inteligente para organização e acompanhamento de candidaturas de emprego.</strong>
+  <strong>Automação assistida para busca, registro e acompanhamento de candidaturas de emprego.</strong>
 </p>
 
 <p align="center">
@@ -13,330 +13,304 @@
 
 ## Sobre o projeto
 
-O **JobApply Automation** é uma aplicação desenvolvida em Python com o objetivo de auxiliar na busca, organização e acompanhamento de oportunidades de emprego.
+O **JobApply Automation** é uma aplicação em Python (CLI) para apoiar a organização e o acompanhamento de oportunidades de emprego. Ela utiliza **Selenium** para navegação/coleta assistida no navegador e **OpenPyXL** para criar e manter uma planilha Excel com o histórico das vagas e candidaturas.
 
-A solução utiliza Selenium para automação de navegação web e OpenPyXL para gerenciamento de uma planilha Excel, centralizando informações sobre vagas e candidaturas.
+O projeto é voltado principalmente para oportunidades nas áreas de:
 
-O projeto foi pensado para profissionais que buscam oportunidades nas áreas de:
+- Infraestrutura de TI, suporte técnico e segurança da informação;
+- Desenvolvimento de software (Java, full stack, frontend, mobile etc.).
 
-- Infraestrutura de TI;
-- Suporte Técnico e Help Desk;
-- Desenvolvimento Java;
-- Desenvolvimento Full Stack.
-
-A aplicação também considera oportunidades remotas e presenciais em Blumenau e região.
-
-## Objetivos
-
-- Organizar oportunidades de emprego em um único lugar.
-- Facilitar a identificação de vagas compatíveis com o perfil profissional.
-- Selecionar o currículo adequado para cada oportunidade.
-- Auxiliar na navegação e no preenchimento de formulários de candidatura.
-- Registrar o andamento dos processos seletivos.
-- Manter um histórico atualizado das candidaturas.
-
-## Tecnologias utilizadas
-
-| Tecnologia | Finalidade |
-|---|---|
-| Python | Linguagem principal |
-| Selenium | Automação de navegador |
-| OpenPyXL | Manipulação de planilhas Excel |
-| PyPDF | Leitura de currículos PDF |
-| Python-DOCX | Leitura de documentos Word |
-| Python-Dotenv | Gerenciamento de variáveis de ambiente |
-| Pytest | Testes automatizados |
-
-## Plataformas consideradas
-
-- LinkedIn
-- Gupy
-- Indeed
-
-> **Observação:** a integração atual utiliza navegação assistida. A coleta automática de vagas e a integração completa com os formulários de cada plataforma ainda dependem de implementações específicas.
+As buscas e o fluxo foram pensados para vagas remotas, híbridas e presenciais (por padrão, Blumenau e Gaspar/SC), mas os parâmetros podem ser ajustados via linha de comando.
 
 ## Funcionalidades
 
-### Implementadas na estrutura inicial
+### Implementadas
 
-- [x] Organização modular do projeto.
-- [x] Configuração do ambiente Python.
-- [x] Inicialização da planilha de acompanhamento.
-- [x] Cadastro manual de oportunidades.
-- [x] Seleção de currículo por área profissional.
-- [x] Navegação automatizada com Selenium.
-- [x] Assistência no preenchimento de candidaturas.
-- [x] Registro do status das candidaturas.
-- [x] Testes iniciais com Pytest.
+- **CLI com subcomandos** (`init`, `list`, `summary`, `update`, `search`, `add`, `open`, `export`).
+- **Planilha de acompanhamento** (`vagas.xlsx`) com:
+  - abas `Vagas` e `Dashboard`;
+  - cabeçalho fixo, filtro automático, largura de colunas, tabela formatada;
+  - validação de dados (status da candidatura, situação da vaga, modalidade);
+  - formatação condicional por status e métricas no dashboard.
+- **Cadastro manual de vagas** com validação de URL, normalização de dados e seleção de currículo por área.
+- **Acompanhamento de candidaturas**: listagem (com filtro por status), resumo por status e atualização de status por ID.
+- **Busca assistida de vagas**:
+  - geração de URLs de pesquisa por plataforma;
+  - no **LinkedIn**, coleta de anúncios públicos exibidos na página, extração de dados básicos (título, empresa, localidade, modalidade inferida, link canônico), deduplicação e registro na planilha;
+  - filtros por área, localidade(s), modalidade(s) e opção de **Candidatura Simplificada** (`--easy-apply`, LinkedIn);
+  - detecção de `authwall`/login no LinkedIn e interrupção segura da busca;
+  - delays configuráveis entre consultas.
+  - em **Gupy/Indeed**, abertura das páginas de pesquisa para revisão manual no navegador.
+- **Abertura assistida de candidatura** (`open`): abre a vaga no navegador, valida o currículo (PDF), tenta localizar e anexar campo de upload, tenta abrir modal de *Easy Apply* (seletores LinkedIn) e registra/atualiza a vaga como `Em progresso` após confirmação do usuário (envio permanece manual).
+- **Seleção automática de currículo** por área/cargo (infraestrutura/suporte/segurança x desenvolvimento), com possibilidade de override manual (`--area`).
+- **Deduplicação de vagas** pelo link (normalização de URL; para LinkedIn, uso de URL canônica do anúncio).
+- **Registro de data de envio**: ao atualizar status para `Enviada`, a data da candidatura é preenchida automaticamente se estiver vazia.
+- **Exportação de candidaturas em PDF** (`export`): gera relatório com filtros por status e opção `--applied-only` (exclui "Não iniciada"), útil para arquivar candidaturas aplicadas.
+- **Logs** em arquivo rotativo (`logs/jobapply.log`).
+- **Configuração flexível de ambiente**: carrega variáveis do `.env` na raiz do workspace com fallback para `jobapply/.env`.
+- **Testes automatizados** com Pytest (`jobapply/tests/`).
 
 ### Em desenvolvimento / planejadas
 
-- [ ] Busca automatizada de oportunidades.
-- [ ] Extração de informações das vagas.
-- [ ] Análise de compatibilidade entre currículo e requisitos.
-- [ ] Identificação automática de palavras-chave.
-- [ ] Preenchimento de formulários específicos por plataforma.
-- [ ] Dashboard com indicadores de candidaturas.
-- [ ] Sistema de notificações sobre novas oportunidades.
-- [ ] Prevenção de cadastro duplicado de vagas.
+- Coletores automatizados específicos para Gupy e Indeed (além da abertura assistida).
+- Extração/análise de compatibilidade entre currículo e requisitos (ex.: palavras-chave/NLP).
+- Preenchimento mais completo de formulários específicos por plataforma (sempre com revisão humana).
+- Relatórios/indicadores adicionais de desempenho das candidaturas.
+- Melhorias de detecção de duplicidades e enriquecimento de dados das vagas.
 
-## Estrutura do projeto
+## Tecnologias utilizadas
+
+| Tecnologia | Uso no projeto |
+|---|---|
+| Python | Linguagem principal e CLI (`argparse`) |
+| Selenium | Automação/navegação no navegador e coleta de anúncios no LinkedIn |
+| OpenPyXL | Criação e manipulação da planilha Excel (`.xlsx`) |
+| python-dotenv | Carregamento de variáveis de ambiente (`.env`) |
+| fpdf2 | Geração de relatórios de candidaturas em PDF |
+| Pytest / pytest-cov | Testes automatizados (dependências em `requirements.txt`) |
+
+> As dependências efetivas do projeto estão em [`requirements.txt`](requirements.txt).
+
+## Plataformas
+
+- **LinkedIn**: busca com filtros e coleta de anúncios públicos para registro na planilha (pode exigir login ou limitar resultados).
+- **Gupy** e **Indeed**: abertura das páginas de pesquisa para análise manual (sem coletor automatizado dedicado).
+
+A automação **não** contorna CAPTCHA, autenticação ou mecanismos de proteção das plataformas. A coleta não envia candidaturas.
+
+## Estrutura do projeto (neste workspace)
 
 ```text
-JobApply-Automation/
-│
-├── main.py
-├── config.py
-├── requirements.txt
-├── .env
-├── .gitignore
-│
-├── data/
-│   ├── curriculo/
-│   │   ├── Abdiel_CV_Infraestrutura.pdf
-│   │   └── Abdiel_CV_Desenvolvimento.docx
-│   │
-│   └── vagas.xlsx
-│
-├── jobapply/
-│   ├── applications/
-│   │   └── application_manager.py
-│   │
-│   ├── browser/
-│   │   └── selenium_manager.py
-│   │
-│   ├── collectors/
-│   │   └── job_collector.py
-│   │
-│   ├── resume/
-│   │   └── resume_manager.py
-│   │
-│   ├── spreadsheet/
-│   │   └── excel_manager.py
-│   │
-│   └── utils/
-│       └── logger.py
-│
-└── tests/
-    └── test_job_collector.py
+tracking-jobs/                  # raiz do workspace
+├── env/                        # ambiente virtual (opcional, se já criado)
+└── jobapply/                   # pacote/aplicação
+    ├── main.py                 # ponto de entrada da CLI
+    ├── config.py               # configuração e variáveis de ambiente
+    ├── requirements.txt
+    ├── .env                    # variáveis locais (não versionar)
+    ├── .env.example
+    ├── applications/
+    │   └── application_manager.py
+    ├── browser/
+    │   └── selenium_manager.py
+    ├── collectors/
+    │   ├── job_collector.py
+    │   └── linkedin_collector.py
+    ├── reporting/
+    │   └── pdf_report.py
+    ├── resume/
+    │   └── resume_manager.py
+    ├── spreadsheet/
+    │   └── excel_manager.py
+    ├── utils/
+    │   ├── logger.py
+    │   └── urls.py
+    ├── tests/
+    └── data/                   # dados locais (podem existir conforme uso)
 ```
 
-*Observação: a estrutura acima representa a organização prevista. Ajuste os caminhos caso seus diretórios estejam organizados de outra maneira.*
+**Observação sobre caminhos:** [`config.py`](config.py) define `ROOT_DIR` como o diretório pai de `jobapply/` (ou seja, a raiz do workspace). Por padrão, carrega variáveis de `ROOT_DIR/.env` e usa `jobapply/.env` como fallback (sem sobrescrever valores já definidos). A planilha, logs e exportações são gravados por padrão em `data/vagas.xlsx`, `logs/jobapply.log` e `data/candidaturas_aplicadas.pdf` relativos à raiz do workspace; os caminhos dos currículos também são resolvidos a partir desse contexto. Ajuste o `.env` e os arquivos conforme a sua organização local.
 
 ## Requisitos
 
 - Python 3.10 ou superior.
-- Microsoft Edge, Google Chrome ou Firefox instalado, conforme a opção `BROWSER`.
-- Visual Studio Code (recomendado).
-- Ambiente virtual Python.
-- Conexão com a internet.
+- Navegador instalado: Microsoft Edge, Google Chrome ou Firefox (conforme `BROWSER`).
+- Driver compatível com o navegador/Selenium, quando necessário no seu ambiente.
+- Conexão com a internet para buscas e abertura de páginas.
 
-## Instalação
+## Instalação e configuração
 
-### 1. Clone o repositório
+### 1. Ambiente virtual e dependências
 
-```bash
-git clone https://github.com/abdieldeathayde/Tracking-for-Jobs.git
-```
-
-### 2. Acesse a pasta
-
-```bash
-cd JobApply-Automation
-```
-
-### 3. Crie o ambiente virtual
-
-```bash
-python -m venv env
-```
-
-### 4. Ative o ambiente virtual
-
-**Windows PowerShell:**
+Na raiz do workspace (onde está a pasta `jobapply/`):
 
 ```powershell
+python -m venv env
 .\env\Scripts\Activate.ps1
-```
-
-### 5. Instale as dependências
-
-```bash
 python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
+python -m pip install -r .\jobapply\requirements.txt
 ```
 
-### 6. Configure as variáveis de ambiente
+> Se já existir um ambiente virtual em `env/`, você pode usá-lo diretamente.
 
-Crie um arquivo `.env` na raiz do projeto:
+### 2. Variáveis de ambiente
+
+Crie um arquivo `.env` na **raiz do workspace** (mesmo nível de `jobapply/`), com base em [`jobapply/.env.example`](.env.example). Exemplo:
 
 ```env
-CV_INFRA_PATH=data/curriculo/Abdiel_CV_Infraestrutura .pdf
+CV_INFRA_PATH=data/curriculo/Abdiel_CV_Infraestrutura.pdf
 CV_DEV_PATH=data/curriculo/Abdiel_CV_Desenvolvimento.pdf
 
 BROWSER=edge
 HEADLESS=false
-WAIT_TIMEOUT=15
+WAIT_SECONDS=15
+REQUEST_DELAY_MIN=2.0
+REQUEST_DELAY_MAX=5.0
+
+# Opcional: perfil dedicado do navegador
+BROWSER_PROFILE_DIR=
 ```
 
-Use `BROWSER=edge`, `BROWSER=chrome` ou `BROWSER=firefox` para escolher o navegador.
-Certifique-se de que os arquivos dos currículos estejam nos caminhos configurados.
+- `BROWSER`: `edge`, `chrome` ou `firefox`.
+- `WAIT_SECONDS`: tempo de espera usado em operações com Selenium (ex.: carregamento de resultados).
+- `REQUEST_DELAY_MIN` / `REQUEST_DELAY_MAX`: intervalo (segundos) entre consultas na busca do LinkedIn.
+- Certifique-se de que os arquivos de currículo existam nos caminhos configurados (a seleção exige que o arquivo exista).
 
 ## Como utilizar
 
-### Inicializar o sistema
+Execute os comandos **a partir da raiz do workspace** usando o módulo `jobapply.main`:
 
-```bash
-python main.py init
+```powershell
+# com o venv ativado
+python -m jobapply.main --help
+
+# ou chamando o Python do venv diretamente
+.\env\Scripts\python.exe -m jobapply.main --help
 ```
 
-Inicializa a estrutura da planilha de acompanhamento.
+### `init` — inicializar planilha
 
-### Acompanhar candidaturas
-
-```bash
-python main.py list
-python main.py update --id 3 --status "Em análise"
+```powershell
+python -m jobapply.main init
 ```
 
-`list` exibe as vagas cadastradas com seus IDs e status. `update` altera o
-status da vaga indicada; os valores aceitos são os mesmos da lista suspensa
-da planilha.
+Cria a estrutura inicial da planilha (abas, validações, formatação e dashboard).
 
-### Consultar oportunidades
+### `list` — listar vagas
 
-```bash
-python main.py search --area ambas --plataforma linkedin
+```powershell
+python -m jobapply.main list
+python -m jobapply.main list --status "Em análise"
 ```
 
-O LinkedIn é a plataforma padrão. A busca percorre automaticamente as
-consultas `Java Developer`, `Fullstack developer`, `Frontend Developer`,
-`Mobile Developer`, `Analista de TI Júnior` e `Analista de Suporte Junior`,
-nas cidades Blumenau e Gaspar, com os filtros de modalidade selecionados.
-Os anúncios encontrados são registrados na planilha, sem duplicar links.
-Para escolher áreas, cidades ou modalidades:
+Exibe ID, status, cargo, empresa, localidade e link. `--status` aceita os mesmos valores usados na planilha.
 
-```bash
-python main.py search --area infra --local "Blumenau SC" "Gaspar SC" --modalidade Remoto Híbrido Presencial
+### `summary` — resumo por status
+
+```powershell
+python -m jobapply.main summary
 ```
 
-A busca coleta os anúncios exibidos publicamente pelo LinkedIn. O site pode
-limitar resultados ou solicitar login; nesses casos, a busca informa que não
-conseguiu carregar anúncios. A coleta não envia candidaturas.
+Mostra o total de vagas e a contagem por status.
 
-### Cadastrar uma vaga
+### `update` — atualizar status da candidatura
 
-**Infraestrutura de TI:**
-
-```bash
-python main.py add --area infra
+```powershell
+python -m jobapply.main update --id 3 --status "Em análise"
 ```
 
-**Desenvolvimento:**
+Status aceitos: `Não iniciada`, `Em progresso`, `Enviada`, `Em análise`, `Entrevista`, `Congelada`, `Desclassificado`, `Aprovado`, `Recusada`, `Encerrada`.
 
-```bash
-python main.py add --area dev
+### `search` — buscar oportunidades
+
+```powershell
+# LinkedIn (padrão), áreas dev + infra, locais e modalidades padrão
+python -m jobapply.main search
+
+# exemplos de filtros
+python -m jobapply.main search --area infra --local "Blumenau SC" "Gaspar SC" --modalidade Remoto Híbrido Presencial
+python -m jobapply.main search --plataforma linkedin --easy-apply
+python -m jobapply.main search --plataforma gupy
 ```
 
-O sistema solicita os dados da oportunidade e registra as informações na planilha.
+- `--area`: `infra`, `dev` ou `ambas` (padrão: `ambas`).
+- `--local`: uma ou mais cidades/localidades (padrão: `Blumenau SC`, `Gaspar SC`).
+- `--modalidade`: `Remoto`, `Híbrido`, `Presencial` (padrão: todas).
+- `--plataforma`: `linkedin` (padrão), `gupy`, `indeed`.
+- `--easy-apply`: filtra vagas com Candidatura Simplificada no LinkedIn.
 
-### Abrir uma candidatura
+**Comportamento:** no LinkedIn, o sistema percorre combinações de consultas/localidades, aguarda resultados, coleta anúncios e registra vagas novas na planilha (sem duplicar links). Em Gupy/Indeed, as páginas são abertas para revisão manual durante a execução.
 
-```bash
-python main.py open --url "URL_DA_VAGA" --empresa "Empresa" --cargo "Analista de Cibersegurança"
+### `add` — cadastrar vaga manualmente
+
+```powershell
+python -m jobapply.main add --empresa "Empresa" --cargo "Analista de Suporte" --url "https://..." --area infra
 ```
 
-O currículo é escolhido pelo cargo: programação/desenvolvimento usa o currículo
-de desenvolvimento; infraestrutura, suporte e segurança da informação usam o
-currículo de infraestrutura. Se o cargo não for reconhecido, informe
-`--area infra` ou `--area dev`. O navegador prepara a candidatura para revisão;
-o envio ainda é manual.
+Argumentos principais:
+- obrigatórios: `--empresa`, `--cargo`, `--url`, `--area` (`infra` ou `dev`);
+- opcionais: `--modalidade` (`Remoto|Híbrido|Presencial|Não informado`), `--localidade`, `--plataforma` (`LinkedIn|Gupy|Indeed|Outra`).
+
+Se o link já estiver cadastrado, a vaga não é duplicada.
+
+### `open` — abrir candidatura assistida
+
+```powershell
+python -m jobapply.main open --url "https://..." --empresa "Empresa" --cargo "Desenvolvedor Java" --area dev
+```
+
+- `--area` é opcional; se omitida, o currículo é inferido pelo cargo. Se não for possível inferir, informe `--area infra` ou `--area dev`.
+- O assistente tenta preparar a página (ex.: anexar currículo PDF quando houver campo de upload e, quando aplicável, abrir fluxo de candidatura simplificada). **O envio da candidatura é sempre manual** e deve ser revisado por você.
+- Ao final, a vaga é registrada/atualizada como `Em progresso` na planilha.
+
+### `export` — exportar candidaturas para PDF
+
+```powershell
+# exporta todas as candidaturas
+python -m jobapply.main export
+
+# exporta apenas candidaturas aplicadas (status diferente de "Não iniciada")
+python -m jobapply.main export --applied-only
+
+# filtra por status e define caminho de saída
+python -m jobapply.main export --status Enviada "Em análise" Entrevista --output .\data\candidaturas_aplicadas.pdf
+```
+
+- `--output`: caminho do PDF gerado (padrão: `data/candidaturas_aplicadas.pdf`).
+- `--status`: um ou mais status para incluir no relatório.
+- `--applied-only`: exclui candidaturas com status `Não iniciada`.
 
 ## Planilha de acompanhamento
 
-O arquivo `data/vagas.xlsx` centraliza os registros das oportunidades.
+A planilha `data/vagas.xlsx` (na raiz do workspace, por padrão) contém:
 
-Informações controladas:
+- **Aba `Vagas`**: colunas como ID, Empresa, Cargo, Modalidade, Localidade, Salário, Requisitos, Compatibilidade (%), Link da vaga, Plataforma, Data encontrada, Data da candidatura, Status da candidatura, Situação da vaga, Currículo utilizado e Observações.
+- **Aba `Dashboard`**: indicadores consolidados (total, enviadas/em análise/entrevista/aprovado/desclassificado, em progresso, congeladas, aprovadas, desclassificadas).
 
-- Empresa;
-- Cargo;
-- Modalidade;
-- Localidade;
-- Salário;
-- Requisitos;
-- Compatibilidade;
-- Link da vaga;
-- Plataforma;
-- Data em que a vaga foi encontrada;
-- Data da candidatura;
-- Status da candidatura;
-- Situação da vaga;
-- Currículo utilizado;
-- Observações.
-
-Os registros são deduplicados pelo link da vaga. Logs da aplicação ficam em
-`logs/jobapply.log`, separados da planilha em `data/vagas.xlsx`.
+Os registros são deduplicados pelo link da vaga. Logs da aplicação ficam em `logs/jobapply.log`.
 
 ## Fluxo de funcionamento
 
 ```text
-Pesquisa de oportunidades
-          |
-          v
-Identificação da vaga
-          |
-          v
-Seleção do currículo
-          |
-          v
-Análise das informações
-          |
-          v
-Navegação com Selenium
-          |
-          v
-Revisão humana
-          |
-          v
-Envio manual da candidatura
-          |
-          v
-Registro na planilha Excel
+Busca ou identificação da oportunidade
+                |
+                v
+Coleta/registro na planilha (quando aplicável)
+                |
+                v
+Seleção do currículo (por área/cargo)
+                |
+                v
+Abertura assistida da vaga no navegador
+                |
+                v
+Revisão humana e envio manual
+                |
+                v
+Atualização de status e acompanhamento na planilha
 ```
 
 ## Testes
 
-Execute os testes automatizados com:
+Execute a partir da raiz do workspace:
 
-```bash
-python -m pytest -v
+```powershell
+python -m pytest jobapply\tests -v
 ```
+
+(ou `python -m pytest -v`, conforme a sua preferência de descoberta de testes.)
 
 ## Segurança e boas práticas
 
-- Não armazene senhas ou credenciais diretamente no código.
+- Não armazene senhas ou credenciais no código.
 - Mantenha o arquivo `.env` fora do controle de versão.
 - Respeite os termos de uso das plataformas de emprego.
 - Não tente contornar CAPTCHA, autenticação ou mecanismos de segurança.
 - Revise os dados antes de enviar qualquer candidatura.
-- Mantenha os currículos atualizados.
-
-## Próximas melhorias
-
-1. Implementar coletores específicos para cada plataforma.
-2. Desenvolver mecanismo de análise de compatibilidade com NLP.
-3. Criar um dashboard de acompanhamento.
-4. Implementar controle de duplicidade de vagas.
-5. Melhorar a automação de formulários com revisão humana.
-6. Desenvolver relatórios de desempenho das candidaturas.
+- Mantenha os currículos atualizados e confira os caminhos configurados.
 
 ## Autor
 
 **Abdiel de Athayde**
 
-Desenvolvido como projeto de estudo e aplicação prática de Python, automação web, organização de dados e desenvolvimento de soluções para produtividade profissional.
-
-<p align="center">
-  <strong>JobApply Automation</strong><br>
-  <em>Menos trabalho manual. Mais organização na busca por oportunidades.</em>
-</p>
+Projeto de estudo e aplicação prática em Python, automação web e organização de dados para acompanhamento de candidaturas.

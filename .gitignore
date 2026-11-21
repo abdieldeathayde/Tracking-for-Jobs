@@ -1,9 +1,14 @@
+# Ambiente virtual e Python
 .venv/
+venv/
 __pycache__/
+*.py[cod]
 .pytest_cache/
-.env
-*.log
-logs/
-.DS_Store
+.coverage
+htmlcov/
 
-data/exports/
+# Segredos, dados pessoais e logs
+.env
+logs/
+data/vagas.xlsx
+data/curriculo/*.pdf
