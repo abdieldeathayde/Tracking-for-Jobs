@@ -1,13 +1,25 @@
+# Ambiente virtual e Python
 .venv/
+<<<<<<< HEAD
 env/
+=======
+venv/
+>>>>>>> trabalho-local
 __pycache__/
+*.py[cod]
 .pytest_cache/
-.env
-*.log
-logs/
-.DS_Store
+.coverage
+htmlcov/
 
+<<<<<<< HEAD
 data/exports/
 
 data/vagas.xlsx
 data/~$*.xlsx
+=======
+# Segredos, dados pessoais e logs
+.env
+logs/
+data/vagas.xlsx
+data/curriculo/*.pdf
+>>>>>>> trabalho-local

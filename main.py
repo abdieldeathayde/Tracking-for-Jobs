@@ -1,30 +1,41 @@
 import argparse
+<<<<<<< HEAD
+=======
+import random
+import time
+>>>>>>> trabalho-local
 from urllib.parse import quote_plus
 
 from selenium.common.exceptions import (
     InvalidSessionIdException,
-    TimeoutException
+    TimeoutException,
 )
 from selenium.webdriver.support.ui import WebDriverWait
 
+<<<<<<< HEAD
 from jobapply.config import EXCEL_PATH, PLATFORMS
+=======
+from jobapply.applications.application_manager import ApplicationAssistant
+>>>>>>> trabalho-local
 from jobapply.browser.selenium_manager import BrowserManager
-
 from jobapply.collectors.job_collector import JobCollector
 from jobapply.collectors.linkedin_collector import LinkedInCollector
-
+from jobapply.config import (
+    DATA_DIR,
+    EXCEL_PATH,
+    PLATFORMS,
+    REQUEST_DELAY_MAX,
+    REQUEST_DELAY_MIN,
+    WAIT_SECONDS,
+)
+from jobapply.reporting.pdf_report import generate_applications_pdf
+from jobapply.resume.resume_manager import ResumeManager
 from jobapply.spreadsheet.excel_manager import (
     APPLICATION_STATUSES,
-    ExcelManager
+    ExcelManager,
 )
-
-from jobapply.resume.resume_manager import ResumeManager
-
-from jobapply.applications.application_manager import (
-    ApplicationAssistant
-)
-
 from jobapply.utils.logger import get_logger
+from jobapply.utils.urls import detect_platform, validate_http_url
 
 
 logger = get_logger()
@@ -32,38 +43,39 @@ logger = get_logger()
 JOB_QUERIES = {
     "infra": [
         "Analista de TI Júnior",
-        "Analista de Suporte Junior"
+        "Analista de Suporte Junior",
     ],
     "dev": [
         "Java Developer",
         "Fullstack developer",
         "Frontend Developer",
-        "Mobile Developer"
-    ]
+        "Mobile Developer",
+    ],
 }
 
 
 def main():
+    parser = argparse.ArgumentParser(description="JobApply Automation")
+    subparsers = parser.add_subparsers(dest="command", required=True)
 
-    parser = argparse.ArgumentParser(
-        description="JobApply Automation"
+    subparsers.add_parser("init", help="Criar planilha Excel")
+
+    list_parser = subparsers.add_parser("list", help="Listar vagas cadastradas")
+    list_parser.add_argument(
+        "--status",
+        choices=APPLICATION_STATUSES,
+        help="Mostrar apenas vagas com este status",
     )
 
-    subparsers = parser.add_subparsers(
-        dest="command",
-        required=True
-    )
-
-    # Inicialização
-
-    subparsers.add_parser(
-        "init",
-        help="Criar planilha Excel"
-    )
-
+<<<<<<< HEAD
     list_parser = subparsers.add_parser(
         "list",
         help="Listar vagas cadastradas"
+=======
+    subparsers.add_parser(
+        "summary",
+        help="Exibir um resumo das candidaturas por status",
+>>>>>>> trabalho-local
     )
     list_parser.add_argument(
         "--status",
@@ -78,150 +90,101 @@ def main():
 
     update_parser = subparsers.add_parser(
         "update",
-        help="Atualizar o status de candidatura de uma vaga"
+        help="Atualizar o status de candidatura de uma vaga",
     )
-    update_parser.add_argument(
-        "--id",
-        type=int,
-        required=True
-    )
+    update_parser.add_argument("--id", type=int, required=True)
     update_parser.add_argument(
         "--status",
         choices=APPLICATION_STATUSES,
-        required=True
+        required=True,
     )
-
-    # Pesquisa
 
     search_parser = subparsers.add_parser(
         "search",
-        help="Abrir pesquisas de vagas"
+        help="Abrir pesquisas de vagas",
     )
-
     search_parser.add_argument(
         "--area",
         choices=["infra", "dev", "ambas"],
-        default="ambas"
+        default="ambas",
     )
-
     search_parser.add_argument(
         "--local",
         nargs="+",
         default=["Blumenau SC", "Gaspar SC"],
-        metavar="CIDADE"
+        metavar="CIDADE",
     )
-
     search_parser.add_argument(
         "--modalidade",
         choices=["Remoto", "Híbrido", "Presencial"],
         nargs="+",
         default=["Remoto", "Híbrido", "Presencial"],
-        metavar="TIPO"
+        metavar="TIPO",
     )
-
     search_parser.add_argument(
         "--plataforma",
         choices=PLATFORMS.keys(),
-        default="linkedin"
+        default="linkedin",
+    )
+    search_parser.add_argument(
+        "--easy-apply",
+        action="store_true",
+        help="Filtrar apenas vagas com Candidatura Simplificada no LinkedIn",
     )
 
-    # Cadastro de vaga
-
-    add_parser = subparsers.add_parser(
-        "add",
-        help="Cadastrar vaga"
-    )
-
-    add_parser.add_argument(
-        "--empresa",
-        required=True
-    )
-
-    add_parser.add_argument(
-        "--cargo",
-        required=True
-    )
-
-    add_parser.add_argument(
-        "--url",
-        required=True
-    )
-
+    add_parser = subparsers.add_parser("add", help="Cadastrar vaga")
+    add_parser.add_argument("--empresa", required=True)
+    add_parser.add_argument("--cargo", required=True)
+    add_parser.add_argument("--url", required=True)
     add_parser.add_argument(
         "--modalidade",
-        choices=[
-            "Remoto",
-            "Híbrido",
-            "Presencial",
-            "Não informado"
-        ],
-        default="Não informado"
+        choices=["Remoto", "Híbrido", "Presencial", "Não informado"],
+        default="Não informado",
     )
-
-    add_parser.add_argument(
-        "--localidade",
-        default="Não informado"
-    )
-
+    add_parser.add_argument("--localidade", default="Não informado")
     add_parser.add_argument(
         "--plataforma",
-        choices=[
-            "LinkedIn",
-            "Gupy",
-            "Indeed",
-            "Outra"
-        ],
-        default="Outra"
+        choices=["LinkedIn", "Gupy", "Indeed", "Outra"],
+        default="Outra",
     )
-
-    add_parser.add_argument(
-        "--area",
-        choices=["infra", "dev"],
-        required=True
-    )
-
-    # Abrir candidatura
+    add_parser.add_argument("--area", choices=["infra", "dev"], required=True)
 
     open_parser = subparsers.add_parser(
         "open",
-        help="Abrir vaga para candidatura assistida"
+        help="Abrir vaga para candidatura assistida",
     )
+    open_parser.add_argument("--url", required=True)
+    open_parser.add_argument("--area", choices=["infra", "dev"])
+    open_parser.add_argument("--empresa", required=True)
+    open_parser.add_argument("--cargo", required=True)
 
-    open_parser.add_argument(
-        "--url",
-        required=True
+    export_parser = subparsers.add_parser(
+        "export",
+        help="Exportar candidaturas para PDF",
     )
-
-    open_parser.add_argument(
-        "--area",
-        choices=["infra", "dev"],
+    export_parser.add_argument(
+        "--output",
+        default=str(DATA_DIR / "candidaturas_aplicadas.pdf"),
+        help="Caminho do arquivo PDF de saída",
     )
-
-    open_parser.add_argument(
-        "--empresa",
-        required=True
+    export_parser.add_argument(
+        "--status",
+        choices=APPLICATION_STATUSES,
+        nargs="+",
+        help="Exportar apenas candidaturas com estes status",
     )
-
-    open_parser.add_argument(
-        "--cargo",
-        required=True
+    export_parser.add_argument(
+        "--applied-only",
+        action="store_true",
+        help="Exportar apenas candidaturas com status diferente de 'Não iniciada'",
     )
 
     args = parser.parse_args()
-
-    excel = ExcelManager(
-        EXCEL_PATH
-    )
-
-    # Inicialização
+    excel = ExcelManager(EXCEL_PATH)
 
     if args.command == "init":
-
         excel.ensure_workbook()
-
-        print(
-            f"Planilha criada: {EXCEL_PATH}"
-        )
+        print(f"Planilha criada: {EXCEL_PATH}")
 
     elif args.command == "list":
         jobs = excel.list_jobs(status=args.status)
@@ -257,139 +220,113 @@ def main():
             print(f"{status:<20} {count:>4}")
 
     elif args.command == "update":
-        if not excel.update_application_status(
-            args.id,
-            args.status
-        ):
-            parser.error(
-                f"Não existe vaga com ID {args.id}."
-            )
+        if not excel.update_application_status(args.id, args.status):
+            parser.error(f"Não existe vaga com ID {args.id}.")
         print(
             f"Status da vaga {args.id} atualizado para "
             f"'{args.status}'."
         )
 
-    # Pesquisa de vagas
-
     elif args.command == "search":
-
         if args.area == "ambas":
-
-            selected_queries = (
-                JOB_QUERIES["dev"] +
-                JOB_QUERIES["infra"]
-            )
-
+            selected_queries = JOB_QUERIES["dev"] + JOB_QUERIES["infra"]
         else:
-
-            selected_queries = JOB_QUERIES[
-                args.area
-            ]
+            selected_queries = JOB_QUERIES[args.area]
 
         collected_jobs = []
+        search_pairs = [
+            (query, location)
+            for query in selected_queries
+            for location in args.local
+        ]
 
         with BrowserManager() as browser:
+            template = PLATFORMS[args.plataforma]
+            for index, (query, location) in enumerate(search_pairs):
+                if args.plataforma == "linkedin":
+                    url = LinkedInCollector.search_url(
+                        query,
+                        location,
+                        args.modalidade,
+                        easy_apply=args.easy_apply,
+                    )
+                else:
+                    url = (
+                        template
+                        if args.plataforma == "gupy"
+                        else template.format(
+                            query=quote_plus(query),
+                            location=quote_plus(location),
+                        )
+                    )
 
-            for platform, template in PLATFORMS.items():
+                try:
+                    browser.driver.get(url)
+                except InvalidSessionIdException:
+                    logger.warning("Sessão do navegador encerrada durante a pesquisa.")
+                    print(
+                        "O navegador foi fechado ou desconectado. "
+                        "A pesquisa foi interrompida."
+                    )
+                    return
 
-                if platform != args.plataforma:
-                    continue
-                for query in selected_queries:
-
-                    for location in args.local:
-
-                        if platform == "linkedin":
-                            url = LinkedInCollector.search_url(
-                                query,
-                                location,
-                                args.modalidade
-                            )
-                        else:
-                            url = (
-                                template
-                                if platform == "gupy"
-                                else template.format(
-                                    query=quote_plus(query),
-                                    location=quote_plus(location)
-                                )
-                            )
-
-                        try:
-                            browser.driver.get(url)
-                        except InvalidSessionIdException:
-                            logger.warning(
-                                "Sessão do navegador encerrada durante a pesquisa."
-                            )
-                            print(
-                                "O navegador foi fechado ou desconectado. "
-                                "A pesquisa foi interrompida."
-                            )
-                            return
-
-                        if platform == "linkedin":
-                            try:
-                                WebDriverWait(
-                                    browser.driver,
-                                    10
-                                ).until(
-                                    lambda driver:
-                                    driver.find_elements(
-                                        "css selector",
-                                        LinkedInCollector.CARD_SELECTOR
-                                    )
-                                )
-                                search_results = (
-                                    LinkedInCollector.collect(
-                                        browser.driver,
-                                        query,
-                                        location
-                                    )
-                                )
-                            except InvalidSessionIdException:
-                                logger.warning(
-                                    "Sessão do navegador encerrada "
-                                    "durante a coleta do LinkedIn."
-                                )
-                                print(
-                                    "O navegador foi fechado ou "
-                                    "desconectado. A busca foi interrompida."
-                                )
-                                return
-                            except TimeoutException:
-                                logger.warning(
-                                    "Nenhum anúncio carregado no LinkedIn "
-                                    "para %s em %s.",
-                                    query,
-                                    location
-                                )
-                                print(
-                                    f"Nenhum anúncio carregado: "
-                                    f"{query} - {location}. "
-                                    "O LinkedIn pode exigir login ou limitar "
-                                    "a busca."
-                                )
-                                continue
-
-                            collected_jobs.extend(search_results)
-                            print(
-                                f"Busca LinkedIn: {query} - {location}; "
-                                f"{len(search_results)} anúncio(s) lido(s)."
-                            )
-                            continue
-
+                if args.plataforma == "linkedin":
+                    if LinkedInCollector.is_authwall(browser.driver):
+                        logger.warning("LinkedIn solicitou login/authwall durante a busca.")
                         print(
-                            f"Pesquisa: {platform} - {query} - {location}"
+                            "O LinkedIn solicitou login (authwall). "
+                            "Interrompendo busca para proteger sua conta."
                         )
+                        break
 
-                        input(
-                            "Analise a página. "
-                            "Pressione ENTER para continuar..."
+                    try:
+                        WebDriverWait(browser.driver, WAIT_SECONDS).until(
+                            lambda driver: driver.find_elements(
+                                "css selector",
+                                LinkedInCollector.CARD_SELECTOR,
+                            )
                         )
+                        search_results = LinkedInCollector.collect(
+                            browser.driver,
+                            query,
+                            location,
+                        )
+                    except InvalidSessionIdException:
+                        logger.warning(
+                            "Sessão do navegador encerrada durante a coleta do LinkedIn."
+                        )
+                        print(
+                            "O navegador foi fechado ou desconectado. "
+                            "A busca foi interrompida."
+                        )
+                        return
+                    except TimeoutException:
+                        logger.warning(
+                            "Nenhum anúncio carregado no LinkedIn para %s em %s.",
+                            query,
+                            location,
+                        )
+                        print(
+                            f"Nenhum anúncio carregado: {query} - {location}. "
+                            "O LinkedIn pode exigir login ou limitar a busca."
+                        )
+                        continue
+
+                    collected_jobs.extend(search_results)
+                    print(
+                        f"Busca LinkedIn: {query} - {location}; "
+                        f"{len(search_results)} anúncio(s) lido(s)."
+                    )
+
+                    if index < len(search_pairs) - 1 and REQUEST_DELAY_MAX > 0:
+                        time.sleep(random.uniform(REQUEST_DELAY_MIN, REQUEST_DELAY_MAX))
+                    continue
+
+                print(f"Pesquisa: {args.plataforma} - {query} - {location}")
+                input("Analise a página. Pressione ENTER para continuar...")
 
         if args.plataforma == "linkedin":
-            unique_jobs = LinkedInCollector.unique_records(
-                collected_jobs
-            )
+            unique_jobs = LinkedInCollector.unique_records(collected_jobs)
             saved_count = excel.add_jobs(unique_jobs)
             print(
                 f"Busca concluída: {len(unique_jobs)} vaga(s) única(s) "
@@ -397,23 +334,16 @@ def main():
                 "na planilha."
             )
 
-    # Cadastro de oportunidade
-
     elif args.command == "add":
-
         try:
-
-            curriculum = ResumeManager.select(
-                args.cargo,
-                args.area
-            )
-
+            curriculum = ResumeManager.select(args.cargo, args.area)
             record = JobCollector.build_record(
                 company=args.empresa,
                 title=args.cargo,
                 url=args.url,
                 modality=args.modalidade,
                 location=args.localidade,
+<<<<<<< HEAD
                 platform=args.plataforma
             )
 
@@ -429,46 +359,31 @@ def main():
                 print("Vaga cadastrada com sucesso!")
             else:
                 print("Essa vaga já está cadastrada pelo mesmo link.")
+=======
+                platform=args.plataforma,
+            )
+            record["curriculum"] = str(curriculum)
+>>>>>>> trabalho-local
 
+            if excel.add_job(record):
+                logger.info("Vaga cadastrada: %s", args.cargo)
+                print("Vaga cadastrada com sucesso!")
+            else:
+                print("Essa vaga já está cadastrada pelo mesmo link.")
         except Exception as error:
-
-            logger.exception(
-                "Erro ao cadastrar vaga"
-            )
-
-            print(
-                f"Erro: {error}"
-            )
-
-    # Candidatura assistida
+            logger.exception("Erro ao cadastrar vaga")
+            print(f"Erro: {error}")
 
     elif args.command == "open":
-
         try:
-
-            curriculum = ResumeManager.select(
-                args.cargo,
-                args.area
-            )
-
-            print(
-                "Currículo selecionado:",
-                curriculum
-            )
+            safe_url = validate_http_url(args.url)
+            curriculum = ResumeManager.select(args.cargo, args.area)
+            print("Currículo selecionado:", curriculum)
 
             with BrowserManager() as browser:
-
-                browser.driver.get(
-                    args.url
-                )
-
-                assistant = ApplicationAssistant(
-                    browser.driver
-                )
-
-                assistant.inspect_and_prepare(
-                    curriculum
-                )
+                browser.driver.get(safe_url)
+                assistant = ApplicationAssistant(browser.driver)
+                assistant.inspect_and_prepare(curriculum)
 
                 input(
                     "\nRevise a candidatura no navegador. "
@@ -479,6 +394,7 @@ def main():
                 record = JobCollector.build_record(
                     company=args.empresa,
                     title=args.cargo,
+<<<<<<< HEAD
                     url=args.url
                 )
 
@@ -494,18 +410,52 @@ def main():
                     print("Vaga registrada na planilha.")
                 else:
                     print("Essa vaga já estava registrada na planilha.")
+=======
+                    url=safe_url,
+                    platform=detect_platform(safe_url),
+                )
+                record["curriculum"] = str(curriculum)
+                record["application_status"] = "Em progresso"
+>>>>>>> trabalho-local
 
+                outcome = excel.register_assisted_application(record)
+                if outcome == "added":
+                    print("Vaga registrada na planilha.")
+                elif outcome == "updated":
+                    print("Vaga atualizada para 'Em progresso' na planilha.")
+                else:
+                    print("Essa vaga já estava registrada na planilha.")
         except Exception as error:
+            logger.exception("Erro na candidatura assistida")
+            print(f"Erro: {error}")
 
-            logger.exception(
-                "Erro na candidatura assistida"
+    elif args.command == "export":
+        try:
+            jobs = excel.list_jobs()
+            result = generate_applications_pdf(
+                jobs,
+                output_path=args.output,
+                statuses=args.status,
+                applied_only=args.applied_only,
             )
-
+            logger.info(
+                "Relatório PDF exportado: %s (%s candidaturas)",
+                result["output_path"],
+                result["total"],
+            )
             print(
-                f"Erro: {error}"
+                f"Relatório PDF gerado: {result['output_path']} "
+                f"({result['total']} candidatura(s))."
             )
+        except Exception as error:
+            logger.exception("Erro ao exportar relatório PDF")
+            print(f"Erro: {error}")
 
 
 if __name__ == "__main__":
+<<<<<<< HEAD
 
     main()
+=======
+    main()
+>>>>>>> trabalho-local
